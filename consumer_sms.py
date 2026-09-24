@@ -10,13 +10,13 @@ connection = pika.BlockingConnection(
 
 channel = connection.channel()
 
-channel.queue_declare(queue="email_queue")
+channel.queue_declare(queue="sms_queue")
 
 
-def send_email(contact):
+def send_sms(contact):
     print(
-        f"Email sent to {contact.fullname} "
-        f"({contact.email})"
+        f"SMS sent to {contact.fullname} "
+        f"({contact.phone})"
     )
 
 
@@ -29,7 +29,7 @@ def callback(ch, method, properties, body):
         print(f"Contact not found: {contact_id}")
         return
 
-    send_email(contact)
+    send_sms(contact)
 
     contact.sent = True
     contact.save()
@@ -38,11 +38,11 @@ def callback(ch, method, properties, body):
 
 
 channel.basic_consume(
-    queue="email_queue",
+    queue="sms_queue",
     on_message_callback=callback,
     auto_ack=True,
 )
 
-print("Waiting for messages...")
+print("Waiting for SMS messages...")
 
 channel.start_consuming()

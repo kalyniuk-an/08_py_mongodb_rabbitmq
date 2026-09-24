@@ -1,10 +1,12 @@
+import re
+
 import connect
 from models import Author, Quote
 from cache import get_cache, set_cache
 
 
-def search_by_author(name):
-    key = f"author:{name.lower()}"
+def search_by_name(name):
+    key = f"name:{name.lower()}"
 
     cached_quotes = get_cache(key)
 
@@ -13,7 +15,9 @@ def search_by_author(name):
         print(cached_quotes)
         return
 
-    author = Author.objects(fullname__icontains=name).first()
+    pattern = re.compile(re.escape(name), re.IGNORECASE)
+
+    author = Author.objects(fullname=pattern).first()
 
     if not author:
         print("Author not found")
@@ -39,7 +43,9 @@ def search_by_tag(tag):
         print(cached_quotes)
         return
 
-    quotes = Quote.objects(tags__icontains=tag)
+    pattern = re.compile(re.escape(tag), re.IGNORECASE)
+
+    quotes = Quote.objects(tags=pattern)
 
     if not quotes:
         print("No quotes found")
@@ -55,14 +61,6 @@ def search_by_tag(tag):
 
 def search_by_tags(tags):
     tags = [tag.strip().lower() for tag in tags]
-    key = f"tags:{','.join(sorted(tags))}"
-
-    cached_quotes = get_cache(key)
-
-    if cached_quotes:
-        print("Result from cache:")
-        print(cached_quotes)
-        return
 
     quotes = Quote.objects(tags__in=tags)
 
@@ -72,30 +70,34 @@ def search_by_tags(tags):
 
     result = "\n".join(quote.quote for quote in quotes)
 
-    set_cache(key, result)
-
     print("Result from MongoDB:")
     print(result)
 
 
 while True:
-    choice = input("Enter command (author, tag, tags, exit): ")
+    command = input("Enter command: ").strip()
 
-    if choice == "exit":
+    if command == "exit":
         print("Goodbye!")
         break
 
-    elif choice == "author":
-        name = input("Enter author name: ")
-        search_by_author(name)
+    if ":" not in command:
+        print("Invalid command")
+        continue
 
-    elif choice == "tag":
-        tag = input("Enter tag: ")
-        search_by_tag(tag)
+    command_name, value = command.split(":", 1)
 
-    elif choice == "tags":
-        tags = input("Enter tags separated by comma: ").split(",")
-        tags = [tag.strip() for tag in tags]
+    command_name = command_name.strip().lower()
+    value = value.strip()
+
+    if command_name == "name":
+        search_by_name(value)
+
+    elif command_name == "tag":
+        search_by_tag(value)
+
+    elif command_name == "tags":
+        tags = value.split(",")
         search_by_tags(tags)
 
     else:

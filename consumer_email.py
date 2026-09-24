@@ -43,6 +43,6 @@ channel.basic_consume(
     auto_ack=True,
 )
 
-print("Waiting for messages...")
+print("Waiting for email messages...")
 
 channel.start_consuming()
